@@ -37,3 +37,9 @@ class TrackingError(PipelineError):
 
 class OutputWriteError(PipelineError):
     exit_code = 4
+
+
+class JobCancelledError(PipelineError):
+    """Processing stopped because cancellation was requested (cooperative, checked per frame)."""
+
+    exit_code = 5

@@ -10,3 +10,10 @@ opencv-python==5.0.0.93 # video decoding / writing / drawing
 numpy==2.4.6
 pydantic==2.14.0        # configuration validation
 PyYAML==6.0.3
+
+# Backend API (FastAPI service + worker)
+fastapi==0.143.0
+starlette==1.7.0        # FileResponse with HTTP Range support (video seeking)
+uvicorn==0.54.0
+python-multipart==0.0.32  # multipart/form-data uploads
+pydantic-settings==2.15.0 # FTIP_* environment / .env settings

@@ -17,7 +17,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Callable
 
-from app.core.exceptions import PipelineError, VideoInputError
+from app.core.exceptions import JobCancelledError, PipelineError, VideoInputError
 from app.core.logging import add_file_handler, get_logger, remove_handler
 from app.pipeline import exporters
 from app.pipeline.config import PipelineConfig
@@ -34,6 +34,7 @@ from app.pipeline.wagon_registry import WagonRegistry
 log = get_logger("pipeline")
 
 TrackerFactory = Callable[[PipelineConfig, float], Tracker]
+CancelCheck = Callable[[], bool]
 
 
 def new_run_id() -> str:
@@ -57,10 +58,13 @@ def process_video(
     progress: ProgressCallback | None = None,
     detector: Detector | None = None,
     tracker_factory: TrackerFactory | None = None,
+    should_cancel: CancelCheck | None = None,
 ) -> ProcessingResult:
     """Process one video. Writes outputs into `run_dir` (default: <output_dir>/<run_id>).
 
     `detector` / `tracker_factory` allow dependency injection (tests, future model types).
+    `should_cancel` is polled once per frame (detection and rendering passes); when it returns
+    True, processing stops with JobCancelledError and result.json records status "cancelled".
     Raises a PipelineError subclass on failure after writing a failed result.json.
     """
     run_id = run_id or new_run_id()
@@ -76,8 +80,13 @@ def process_video(
     )
     result.config["resolved_model_path"] = str(config.resolved_model_path())
     try:
-        _run(Path(input_path), config, out_dir, result, timing, progress, detector, tracker_factory)
+        _run(Path(input_path), config, out_dir, result, timing, progress, detector, tracker_factory, should_cancel)
         result.status = "completed"
+    except JobCancelledError as exc:
+        result.status = "cancelled"
+        result.error = f"{type(exc).__name__}: {exc}"
+        log.warning("Run %s cancelled: %s", run_id, exc)
+        raise
     except PipelineError as exc:
         result.error = f"{type(exc).__name__}: {exc}"
         log.error("Run %s failed: %s", run_id, result.error)
@@ -108,8 +117,13 @@ def _run(
     progress: ProgressCallback | None,
     detector: Detector | None,
     tracker_factory: TrackerFactory | None,
+    should_cancel: CancelCheck | None = None,
 ) -> None:
     warnings = result.warnings
+
+    def check_cancel(where: str) -> None:
+        if should_cancel is not None and should_cancel():
+            raise JobCancelledError(f"Cancellation requested during {where}")
 
     # ---- validation + model --------------------------------------------------------
     _emit(progress, ProgressEvent("validating", "Validating input video"))
@@ -143,6 +157,7 @@ def _run(
     n_detections = 0
     t1 = time.perf_counter()
     for sample in iter_samples(input_path, config.sampling.target_fps, meta.fps, config.sampling.max_frames, stats):
+        check_cancel("detection")
         a = time.perf_counter()
         detections = detector.detect(sample.image, sample.frame_index, sample.timestamp)
         b = time.perf_counter()
@@ -223,6 +238,12 @@ def _run(
         t4 = time.perf_counter()
         annotator = FrameAnnotator(reg.wagons, reg.observations, motion, config.output.draw_counting_line)
         render_stats = SamplingStats()
+
+        def on_rendered(n: int) -> None:
+            check_cancel("rendering")
+            if n % 25 == 0:
+                _emit(progress, ProgressEvent("rendering", f"Rendered {n} frames", n, stats.sampled_frames))
+
         codec, written = render_video(
             iter_samples(input_path, config.sampling.target_fps, meta.fps, config.sampling.max_frames, render_stats),
             annotator,
@@ -230,6 +251,7 @@ def _run(
             fps=stats.effective_fps,
             size=(meta.width, meta.height),
             codecs=config.output.video_codecs,
+            on_frame=on_rendered,
         )
         result.artifacts["annotated_video"] = "annotated.mp4"
         result.sampling["output_video"] = {"codec": codec, "fps": round(stats.effective_fps, 4), "frames": written}

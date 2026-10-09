@@ -56,6 +56,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     m = sub.add_parser("inspect-model", help="Load the model and print its class map and metadata")
     _common(m)
+
+    db = sub.add_parser("init-db", help="Create the API storage folders and SQLite database (idempotent)")
+    db.add_argument("--log-level", choices=["DEBUG", "INFO", "WARNING", "ERROR"])
     return parser
 
 
@@ -90,6 +93,16 @@ def _print_progress(event: ProgressEvent) -> None:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     configure_logging(args.log_level or "INFO")
+    if args.command == "init-db":
+        from app.core.settings import get_settings
+        from app.repositories.database import Database
+        from app.storage.file_storage import LocalFileStorage
+
+        settings = get_settings()
+        LocalFileStorage(settings.storage_root).initialize()
+        Database(settings.db_path).initialize()
+        print(f"Initialised storage and database under {settings.storage_root}")
+        return 0
     try:
         config = load_config(args.config, _overrides(args))
         configure_logging(config.log_level)

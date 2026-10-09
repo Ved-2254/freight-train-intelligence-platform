@@ -71,6 +71,21 @@ fragment-matching tolerances, minimum evidence, …) is in
 
 Schemas, flags and the sequence convention are documented in `documentation/output_schema.md`.
 
+## Backend API (for the website)
+
+Run the API **and** its background worker with one command (from `backend/`):
+
+```bash
+python -m app.serve
+```
+
+Then open `http://127.0.0.1:8000/docs`. Workflow: `POST /api/v1/videos` (upload) → `POST /api/v1/jobs`
+(202 + `job_id`) → poll `GET /api/v1/jobs/{job_id}` → `GET .../results`, `.../video`,
+`.../exports/json|csv`. Jobs, results and files persist in `backend/storage/` (SQLite + files) across
+restarts; interrupted jobs are re-queued once; running jobs can be cancelled. Settings: `FTIP_*`
+environment variables or `backend/.env` (see `backend/.env.example`). No authentication — keep it on
+localhost. Full reference: `documentation/backend_api.md`.
+
 ## How it works
 
 ```

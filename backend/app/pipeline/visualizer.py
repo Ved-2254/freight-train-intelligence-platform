@@ -11,7 +11,7 @@ import colorsys
 import zlib
 from collections import defaultdict
 from pathlib import Path
-from typing import Iterable
+from typing import Callable, Iterable
 
 import cv2
 import numpy as np
@@ -139,8 +139,13 @@ def render_video(
     fps: float,
     size: tuple[int, int],
     codecs: list[str],
+    on_frame: Callable[[int], None] | None = None,
 ) -> tuple[str, int]:
-    """Render annotated frames; returns (codec used, frames written)."""
+    """Render annotated frames; returns (codec used, frames written).
+
+    `on_frame(frames_written)` is called after each frame; it may raise to abort rendering
+    (the writer is still released).
+    """
     writer = VideoWriterHandle(path, fps, size, codecs)
     try:
         for sample in samples:
@@ -148,6 +153,8 @@ def render_video(
             if (frame.shape[1], frame.shape[0]) != size:
                 frame = cv2.resize(frame, size)
             writer.write(frame)
+            if on_frame is not None:
+                on_frame(writer.frames_written)
     finally:
         writer.close()
     return writer.codec or "", writer.frames_written

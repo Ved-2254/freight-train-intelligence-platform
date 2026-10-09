@@ -28,3 +28,5 @@ Thumbs.db
 .DS_Store
 
 /data
+# API runtime storage (uploads, job outputs, SQLite database)
+backend/storage/
