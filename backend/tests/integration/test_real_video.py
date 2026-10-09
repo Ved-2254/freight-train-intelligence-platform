@@ -1,6 +1,7 @@
 """Full pipeline on a real video with the trained model.
 
-Set WAGON_SAMPLE_VIDEO=<path>. Optionally set WAGON_EXPECTED_COUNT=<int> and
+Set WAGON_SAMPLE_VIDEO=<path>. Optionally set WAGON_EXPECTED_COUNT=<int> (wagon total, i.e.
+excluding `counting.exclude_from_wagon_total` classes such as Locomotive) and
 WAGON_EXPECTED_SEQUENCE="Locomotive,BOXN,..." to check against a manual ground truth.
 """
 
@@ -30,7 +31,7 @@ def test_real_video_end_to_end(tmp_path, config):
 
     expected = os.environ.get("WAGON_EXPECTED_COUNT")
     if expected:
-        assert result.counts.total_counted == int(expected)
+        assert result.counts.wagons_only_total == int(expected)
     seq = os.environ.get("WAGON_EXPECTED_SEQUENCE")
     if seq:
         assert [s.class_name for s in result.sequence] == [c.strip() for c in seq.split(",")]

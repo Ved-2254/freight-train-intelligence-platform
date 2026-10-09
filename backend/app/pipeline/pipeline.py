@@ -28,7 +28,7 @@ from app.pipeline.track_manager import TrackManager
 from app.pipeline.tracker import Tracker, create_tracker
 from app.pipeline.video_reader import SamplingStats, inspect_video, iter_samples, planned_sampling_rate
 from app.pipeline.visualizer import FrameAnnotator, render_video
-from app.pipeline.wagon_counter import apply_line_counting, calculate_counts
+from app.pipeline.wagon_counter import apply_line_counting, apply_stationary_exclusion, calculate_counts
 from app.pipeline.wagon_registry import WagonRegistry
 
 log = get_logger("pipeline")
@@ -186,6 +186,12 @@ def _run(
         reg.wagons, reg.observations, (meta.width, meta.height), config.counting, config.resolution,
         video_span=(stats.first_timestamp, stats.last_timestamp), edge_margin=config.track.edge_margin_px,
     )
+    if config.counting.exclude_stationary:
+        apply_stationary_exclusion(reg.wagons)
+        n_stationary = sum(1 for w in reg.wagons if w.count_status.value == "not_counted_stationary")
+        if n_stationary:
+            warnings.append(f"{n_stationary} record(s) were not moving with the train and were not counted "
+                            "(e.g. stock on another track); see wagon flags 'stationary_object'")
     if config.counting.mode == "line":
         if motion.direction == 0:
             warnings.append("Line counting requested but no consistent travel direction was found; nothing crossed the line")

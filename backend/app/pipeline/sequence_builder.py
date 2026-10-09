@@ -107,12 +107,16 @@ def analyze_motion(
     else:
         direction = 0
 
+    stationary = _stationary_wagons(wagons, observations, velocities, ai, counting, resolution) if direction != 0 else set()
     inconsistent: list[str] = []
     for w in wagons:
         v = velocities[w.wagon_uid][ai]
         w.mean_velocity = round(v, 3)
         obs = observations[w.wagon_uid]
-        if direction != 0 and abs(v) >= resolution.min_speed_px_per_s and (v > 0) != (direction > 0):
+        if w.wagon_uid in stationary:
+            w.flags.add(WagonFlag.STATIONARY_OBJECT)
+            w.notes.append("not moving with the train (likely an object on another track or background)")
+        elif direction != 0 and abs(v) >= resolution.min_speed_px_per_s and (v > 0) != (direction > 0):
             w.flags.add(WagonFlag.DIRECTION_INCONSISTENT)
             inconsistent.append(w.wagon_uid)
         w.crossing_time, w.crossing_direction = _validated_crossing(obs, axis, ref, counting.hysteresis_px, direction)
@@ -129,6 +133,47 @@ def analyze_motion(
     log.info("Motion: axis=%s direction=%s, %d moving wagons, %d inconsistent",
              axis, summary.direction_label, len(moving), len(inconsistent))
     return summary
+
+
+def _stationary_wagons(
+    wagons: list[WagonRecord],
+    observations: dict[str, list[TrackObservation]],
+    velocities: dict[str, tuple[float, float]],
+    ai: int,
+    counting: CountingConfig,
+    resolution: ResolutionConfig,
+) -> set[str]:
+    """UIDs of records that stay (nearly) still while concurrently visible train wagons move.
+
+    The reference is built only from wagons moving in the dominant direction at a meaningful
+    fraction of the train's typical speed, so several slow background objects cannot vouch for
+    each other, and a train accelerating from rest (all wagons slow together) is left alone.
+    """
+    v_axis = {w.wagon_uid: velocities[w.wagon_uid][ai] for w in wagons}
+    moving = [v for v in v_axis.values() if abs(v) >= resolution.min_speed_px_per_s]
+    if not moving:
+        return set()
+    direction = 1 if median(moving) > 0 else -1
+    train_speed = median(abs(v) for v in moving if (v > 0) == (direction > 0)) if any(
+        (v > 0) == (direction > 0) for v in moving) else 0.0
+    floor = max(resolution.min_speed_px_per_s, counting.stationary_reference_ratio * train_speed)
+    out: set[str] = set()
+    for w in wagons:
+        speed = abs(v_axis[w.wagon_uid])
+        concurrent = [
+            abs(v_axis[o.wagon_uid]) for o in wagons
+            if o is not w
+            and o.first_timestamp <= w.last_timestamp and w.first_timestamp <= o.last_timestamp
+            and v_axis[o.wagon_uid] * direction >= floor
+        ]
+        if not concurrent:
+            continue
+        obs = observations[w.wagon_uid]
+        length = max((o.bbox[ai + 2] - o.bbox[ai]) for o in obs)
+        travel = speed * (w.last_timestamp - w.first_timestamp)
+        if speed < counting.stationary_speed_ratio * median(concurrent) and travel < counting.stationary_max_travel_ratio * length:
+            out.add(w.wagon_uid)
+    return out
 
 
 def _partial_flags(

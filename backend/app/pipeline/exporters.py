@@ -171,8 +171,9 @@ def format_summary(result: ProcessingResult) -> str:
     c = result.counts
     if c:
         lines.append(f"Counting mode: {c.mode}")
-        lines.append(f"Total counted: {c.total_counted}  (wagons excluding {c.excluded_classes or 'none'}: "
-                     f"{c.wagons_only_total})")
+        excluded = ", ".join(c.excluded_classes) if c.excluded_classes else "nothing"
+        lines.append(f"Total wagons: {c.wagons_only_total}  (excluding {excluded}; "
+                     f"all counted rolling stock: {c.total_counted})")
         lines.append(f"Records not counted: {c.not_counted}   Tracker IDs seen: {c.tracker_ids_seen}")
         if c.type_counts:
             width = max(len(k) for k in c.type_counts)

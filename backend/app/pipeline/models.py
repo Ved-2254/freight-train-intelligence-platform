@@ -131,6 +131,7 @@ class CountStatus(str, Enum):
     COUNTED = "counted"
     NOT_COUNTED_INSUFFICIENT_EVIDENCE = "not_counted_insufficient_evidence"
     NOT_COUNTED_NO_LINE_CROSSING = "not_counted_no_line_crossing"
+    NOT_COUNTED_STATIONARY = "not_counted_stationary"
 
 
 class WagonFlag(str, Enum):
@@ -145,6 +146,7 @@ class WagonFlag(str, Enum):
     SEQUENCE_EXTRAPOLATED = "sequence_extrapolated"
     DIRECTION_INCONSISTENT = "direction_inconsistent"
     INSUFFICIENT_EVIDENCE = "insufficient_evidence"
+    STATIONARY_OBJECT = "stationary_object"
 
 
 @dataclass

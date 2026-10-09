@@ -52,8 +52,11 @@ Outputs go to `data/outputs/<run_id>/` (git-ignored). Useful options:
 | `--line-position F`, `--travel-axis auto\|x\|y` | Reference/counting line (fraction of frame) and axis |
 | `--max-frames N`, `--no-video`, `--quiet`, `--log-level` | Quick runs and verbosity |
 
-Every other setting (class-vote thresholds, fragment-matching tolerances, minimum evidence,
-excluded classes such as `Locomotive` for a wagons-only total, …) is in
+**Locomotives are not counted as wagons**: they are detected, tracked and shown in the sequence, but the
+headline "Total wagons" excludes the classes in `counting.exclude_from_wagon_total` (default
+`[Locomotive]`). Objects that don't move with the passing train (e.g. stock parked on another track)
+are reported as `not_counted_stationary`. Every other setting (class-vote thresholds,
+fragment-matching tolerances, minimum evidence, …) is in
 `backend/configs/default.yaml`. Exit codes: 0 ok, 2 bad input/config, 3 model, 4 processing/output.
 
 ### Outputs

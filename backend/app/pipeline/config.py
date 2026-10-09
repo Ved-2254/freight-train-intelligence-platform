@@ -99,12 +99,23 @@ class CountingConfig(_Section):
     travel_axis: Literal["auto", "x", "y"] = "auto"
     expected_direction: Literal["auto", "positive", "negative"] = "auto"
     hysteresis_px: float = Field(5.0, ge=0.0)
-    # Classes counted as rolling stock but reported separately from the "wagons only" total
-    # (e.g. ["Locomotive"]). Empty = every resolved class is a wagon.
-    exclude_from_wagon_total: list[str] = Field(default_factory=list)
+    # Classes that are detected, tracked and listed in the sequence but NOT counted as wagons in
+    # the headline total (`wagons_only_total`). Project default: locomotives are not wagons.
+    exclude_from_wagon_total: list[str] = Field(default_factory=lambda: ["Locomotive"])
     # Sampled frames at the start/end of the video in which a visible record is
     # considered potentially cut off by the recording.
     boundary_seconds: float = Field(0.5, ge=0.0)
+    # Objects that do not move with the passing train (e.g. rolling stock parked on another
+    # track) are reported but not counted. Applied only while other wagons visible at the same
+    # time are clearly moving; a record is stationary when BOTH its speed is below
+    # `stationary_speed_ratio` x the median speed of those wagons AND it travels less than
+    # `stationary_max_travel_ratio` x its own box length along the travel axis.
+    exclude_stationary: bool = True
+    stationary_speed_ratio: float = Field(0.5, gt=0.0, le=1.0)
+    stationary_max_travel_ratio: float = Field(0.5, gt=0.0)
+    # Only wagons moving with the train at >= this fraction of its median speed serve as the
+    # moving reference (perspective views make near/far wagons appear at different speeds).
+    stationary_reference_ratio: float = Field(0.25, gt=0.0, le=1.0)
 
 
 class OutputConfig(_Section):

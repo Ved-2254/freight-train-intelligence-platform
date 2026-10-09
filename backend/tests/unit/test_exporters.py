@@ -59,4 +59,4 @@ def test_wagons_csv_has_expected_columns_and_rows(tmp_path: Path):
 def test_summary_mentions_counts(tmp_path: Path):
     res, _ = _result(tmp_path)
     text = exporters.format_summary(res)
-    assert "Total counted: 2" in text and "BOXN" in text
+    assert "Total wagons: 2" in text and "BOXN" in text

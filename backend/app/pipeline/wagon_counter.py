@@ -14,7 +14,7 @@ from collections import Counter
 
 from app.core.logging import get_logger
 from app.pipeline.config import CountingConfig
-from app.pipeline.models import CountResult, CountStatus, WagonRecord
+from app.pipeline.models import CountResult, CountStatus, WagonFlag, WagonRecord
 
 log = get_logger("counter")
 
@@ -25,6 +25,13 @@ def apply_line_counting(wagons: list[WagonRecord]) -> None:
         if w.count_status == CountStatus.COUNTED and w.crossing_time is None:
             w.count_status = CountStatus.NOT_COUNTED_NO_LINE_CROSSING
             w.notes.append("no validated crossing of the counting line in the travel direction")
+
+
+def apply_stationary_exclusion(wagons: list[WagonRecord]) -> None:
+    """Records flagged `stationary_object` (not moving with the train) are reported, not counted."""
+    for w in wagons:
+        if w.count_status == CountStatus.COUNTED and WagonFlag.STATIONARY_OBJECT in w.flags:
+            w.count_status = CountStatus.NOT_COUNTED_STATIONARY
 
 
 def calculate_counts(wagons: list[WagonRecord], counting: CountingConfig, tracker_ids_seen: int) -> CountResult:

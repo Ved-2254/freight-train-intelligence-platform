@@ -98,7 +98,7 @@ video start/end), `partial_start`, `partial_end`, `partial_both`, or `empty`.
 | `class_confidence` | Winning share of confidence-weighted top-1 votes (not a calibrated probability) |
 | `class_best_guess`, `class_runner_up`, `class_distribution` | Vote details for review |
 | `mean_detection_confidence`, `supporting_observations` | Detector confidence / count for the winning class |
-| `count_status` | `counted`, `not_counted_insufficient_evidence`, `not_counted_no_line_crossing` |
+| `count_status` | `counted`, `not_counted_insufficient_evidence`, `not_counted_no_line_crossing`, `not_counted_stationary` |
 | `uncertain` | True if any uncertainty flag is set |
 | `flags` | See below |
 | `notes` | Human-readable explanations (merges, reasons not counted) |
@@ -120,6 +120,7 @@ video start/end), `partial_start`, `partial_end`, `partial_both`, or `empty`.
 | `duplicate_merged` | Concurrent duplicate tracks merged into this wagon | no |
 | `partial_at_start` / `partial_at_end` | Visible near the start/end of the video; passage only partly observed | no |
 | `insufficient_evidence` | Below `resolution.min_observations` / `min_duration_seconds` | n/a (not counted) |
+| `stationary_object` | Not moving with the passing train (e.g. stock parked on another track); `counting.exclude_stationary` | n/a (not counted) |
 
 ## wagons.csv
 

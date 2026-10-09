@@ -129,3 +129,31 @@ def test_opposite_mover_is_flagged_direction_inconsistent():
     odd = next(w for w in reg.wagons if 70 in w.track_ids)
     assert WagonFlag.DIRECTION_INCONSISTENT in odd.flags
     assert odd.wagon_uid in motion.inconsistent_wagons
+
+
+def test_parked_object_on_another_track_is_reported_but_not_counted():
+    tracks = _train(+1)
+    # A coach parked in the background: almost no motion while the train passes.
+    parked = [(700 + (i % 3), 20.0, 1000 + (i % 3), 80.0) for i in range(30)]
+    tracks.append(make_track(80, 0, parked, "Locomotive"))
+    counting = CountingConfig(boundary_seconds=0.0)
+    res = ResolutionConfig()
+    reg = WagonRegistry(res, TrackConfig(), ClassConfig(), counting).resolve(tracks, (1280, 720))
+    analyze_motion(reg.wagons, reg.observations, (1280, 720), counting, res)
+    from app.pipeline.wagon_counter import apply_stationary_exclusion
+
+    apply_stationary_exclusion(reg.wagons)
+    counts = calculate_counts(reg.wagons, counting, len(tracks))
+    parked_rec = next(w for w in reg.wagons if 80 in w.track_ids)
+    assert WagonFlag.STATIONARY_OBJECT in parked_rec.flags
+    assert parked_rec.count_status == CountStatus.NOT_COUNTED_STATIONARY
+    assert counts.total_counted == 4 and counts.not_counted == 1
+    assert not any(WagonFlag.STATIONARY_OBJECT in w.flags for w in reg.wagons if 80 not in w.track_ids)
+
+
+def test_stopped_train_is_not_excluded_as_stationary():
+    tracks = [make_track(1, 0, moving_boxes(300, 20, 0.0), "BCN"),
+              make_track(2, 0, moving_boxes(100, 20, 0.0), "BOXN")]
+    reg, _, counts, _, _ = _pipeline(tracks)
+    assert counts.total_counted == 2
+    assert not any(WagonFlag.STATIONARY_OBJECT in w.flags for w in reg.wagons)
