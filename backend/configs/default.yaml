@@ -1,0 +1,71 @@
+# Default pipeline configuration. Relative paths resolve against the project root.
+# Any value can be overridden by CLI flags (see `python -m app.cli process --help`)
+# or by passing another file with --config.
+
+detector:
+  model_path: backend/models/best.pt
+  confidence_threshold: 0.10   # low on purpose: ByteTrack uses low-score boxes for recovery
+  iou_threshold: 0.50
+  image_size: 640
+  device: auto                 # auto -> CUDA GPU 0 if available, else CPU
+  half: false
+  agnostic_nms: true           # suppress overlapping boxes of different classes on one wagon
+  max_det: 100
+  min_box_size_px: 12         # drop slivers thinner than this (px)
+  # Fail fast if a replacement model has a different class map:
+  expected_classes: null
+
+sampling:
+  target_fps: 30               # analysis cadence; lower-fps sources are never upsampled
+  max_frames: null
+
+tracker:
+  track_high_thresh: 0.25
+  track_low_thresh: 0.10
+  new_track_thresh: 0.25
+  match_thresh: 0.80
+  fuse_score: true
+  track_buffer_seconds: 1.0
+
+track:
+  min_hits: 3
+  edge_margin_px: 4
+  edge_observation_weight: 0.5
+
+classes:
+  min_class_share: 0.60
+  min_class_observations: 3
+  unresolved_label: Unresolved
+
+resolution:
+  max_gap_seconds: 1.5
+  max_center_distance_ratio: 0.5
+  max_size_ratio: 1.5
+  motion_fit_window: 15
+  min_speed_px_per_s: 5.0
+  duplicate_iou: 0.60
+  duplicate_containment: 0.85
+  duplicate_overlap_fraction: 0.80
+  duplicate_candidate_iou: 0.30
+  min_observations: 5
+  min_duration_seconds: 0.20
+  id_switch_jump_ratio: 0.6
+  id_switch_min_px: 20.0
+
+counting:
+  mode: registry               # registry | line
+  line_position: 0.5           # reference line (fraction of frame along the travel axis)
+  travel_axis: auto            # auto | x | y
+  expected_direction: auto     # auto | positive | negative
+  hysteresis_px: 5.0
+  exclude_from_wagon_total: [] # e.g. [Locomotive] to report a wagons-only total as well
+  boundary_seconds: 0.5
+
+output:
+  output_dir: data/outputs
+  write_video: true
+  video_codecs: [avc1, mp4v]
+  save_tracks_csv: true
+  draw_counting_line: true
+
+log_level: INFO
