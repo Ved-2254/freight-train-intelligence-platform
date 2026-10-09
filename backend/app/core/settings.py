@@ -26,7 +26,8 @@ class ServiceSettings(BaseSettings):
     # HTTP
     host: str = "127.0.0.1"
     port: int = Field(8000, ge=1, le=65535)
-    cors_origins: str = "http://localhost:3000"  # comma-separated; never "*" by default
+    # Comma-separated; never "*" by default. 5173 = Vite demo frontend, 3000 = other local dev servers.
+    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000"
     public_base_url: str | None = None  # e.g. https://api.example.com -> absolute links
     log_level: str = "INFO"
 

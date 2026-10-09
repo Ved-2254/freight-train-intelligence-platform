@@ -71,6 +71,20 @@ fragment-matching tolerances, minimum evidence, …) is in
 
 Schemas, flags and the sequence convention are documented in `documentation/output_schema.md`.
 
+## Run the demo (one command)
+
+From the repository root (Windows):
+
+```bash
+start-demo
+```
+
+This runs `.venv\Scripts\python demo.py`, which installs the frontend packages on first use, starts the
+backend (API + worker) on `http://127.0.0.1:8000`, waits until it is ready, starts the frontend on
+`http://127.0.0.1:5173` and opens it in the browser. Press **Ctrl+C** to stop everything.
+`start-demo --prod` serves an optimised build of the frontend instead of the development server.
+Requirements: the Python virtual environment in `.venv` (see Setup) and Node.js 20+.
+
 ## Backend API (for the website)
 
 Run the API **and** its background worker with one command (from `backend/`):

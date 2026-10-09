@@ -209,7 +209,8 @@ job finished ~50 s after creation; result 60 wagons (+2 locomotives), H.264 outp
   `result_summary.browser_playable_video` is false, the server's OpenCV build fell back to the
   `mp4v` codec: offer the download link instead.
 * Use `links.*` from responses rather than building URLs.
-* CORS: allowed origins come from `FTIP_CORS_ORIGINS` (default `http://localhost:3000`).
+* CORS: allowed origins come from `FTIP_CORS_ORIGINS` (default: the Vite frontend at
+  `http://localhost:5173` / `http://127.0.0.1:5173`, plus `http://localhost:3000`).
   Exposed headers include `X-Request-ID`, `Location`, `Content-Disposition`, `Content-Range`.
 * Uncertainty: `result.wagons[].flags`, `result.sequence[].uncertain`, `result.warnings` and
   `result.unresolved_identities` should be shown, not hidden (see `documentation/output_schema.md`).

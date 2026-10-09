@@ -1,0 +1,62 @@
+import { useRef, useState, type DragEvent } from "react";
+
+export const ACCEPTED_EXTENSIONS = [".mp4", ".mov", ".avi", ".mkv"];
+export const MAX_UPLOAD_BYTES = 2 * 1024 ** 3; // matches the backend default (FTIP_MAX_UPLOAD_BYTES)
+
+/** Returns an error message, or null when the file can be uploaded. */
+export function validateFile(file: File): string | null {
+  const name = file.name.toLowerCase();
+  if (!ACCEPTED_EXTENSIONS.some((ext) => name.endsWith(ext))) {
+    return `Unsupported file type. Use ${ACCEPTED_EXTENSIONS.join(", ")}.`;
+  }
+  if (file.size === 0) return "The file is empty.";
+  if (file.size > MAX_UPLOAD_BYTES) return "The file is larger than the 2 GB limit.";
+  return null;
+}
+
+export function UploadDropzone({ onFile, disabled }: { onFile: (file: File) => void; disabled?: boolean }) {
+  const input = useRef<HTMLInputElement>(null);
+  const [dragging, setDragging] = useState(false);
+
+  const onDrop = (e: DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    if (disabled) return;
+    const file = e.dataTransfer.files?.[0];
+    if (file) onFile(file);
+  };
+
+  return (
+    <div
+      className={`dropzone${dragging ? " dragging" : ""}`}
+      role="button"
+      tabIndex={0}
+      aria-disabled={disabled}
+      onClick={() => !disabled && input.current?.click()}
+      onKeyDown={(e) => {
+        if ((e.key === "Enter" || e.key === " ") && !disabled) input.current?.click();
+      }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        if (!disabled) setDragging(true);
+      }}
+      onDragLeave={() => setDragging(false)}
+      onDrop={onDrop}
+    >
+      <strong>Drop a train video here, or click to choose a file</strong>
+      <p className="muted small">MP4, MOV, AVI or MKV, up to 2 GB</p>
+      <input
+        ref={input}
+        type="file"
+        accept={ACCEPTED_EXTENSIONS.join(",")}
+        hidden
+        data-testid="file-input"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) onFile(file);
+          e.target.value = ""; // allow choosing the same file again
+        }}
+      />
+    </div>
+  );
+}

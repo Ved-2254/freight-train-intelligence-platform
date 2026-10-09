@@ -171,7 +171,12 @@ class EmbeddedWorker:
     def stop(self) -> None:
         self._stop.set()
         if self.proc and self.proc.poll() is None:
-            self.proc.terminate()
+            if sys.platform == "win32":
+                # A venv's python.exe on Windows is a launcher that runs the real interpreter as a
+                # child process; end the whole tree so no worker is left running.
+                subprocess.run(["taskkill", "/PID", str(self.proc.pid), "/T", "/F"], capture_output=True)
+            else:
+                self.proc.terminate()
             try:
                 self.proc.wait(timeout=10)
             except subprocess.TimeoutExpired:

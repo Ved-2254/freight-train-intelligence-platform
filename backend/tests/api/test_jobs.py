@@ -13,6 +13,7 @@ def test_create_job_returns_202_promptly(client, train_video):
 
     status = client.get(body["status_url"]).json()
     assert status["status"] == "queued" and status["progress_percent"] == 0
+    assert status["video_filename"] == "train.mp4"
     assert status["options"] == {"target_fps": 10.0, "counting_mode": "registry"}
     assert status["links"]["results"] is None and status["error"] is None
 

@@ -109,9 +109,11 @@ class JobService:
         error = None
         if job.status in ("failed", "cancelled") and job.error_code:
             error = JobError(code=job.error_code, message=job.error_message or "")
+        video = self.videos.get(job.video_id)
         return JobResponse(
             job_id=job.job_id,
             video_id=job.video_id,
+            video_filename=video.original_filename if video else None,
             status=job.status,
             stage=job.stage,
             progress_percent=None if job.progress_percent is None else round(job.progress_percent, 1),

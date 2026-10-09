@@ -73,6 +73,7 @@ class JobResultSummary(BaseModel):
 class JobResponse(BaseModel):
     job_id: str
     video_id: str
+    video_filename: str | None = Field(None, description="Original name of the uploaded video (metadata only)")
     status: JobStatus
     stage: str | None = Field(description="Current pipeline stage, e.g. detecting_and_tracking")
     progress_percent: float | None = Field(
