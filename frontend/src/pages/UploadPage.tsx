@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Alert, Card, ProgressBar } from "../components/common";
 import { JobOptionsForm } from "../components/JobOptionsForm";
 import { UploadDropzone, validateFile } from "../components/UploadDropzone";
+import { RailSchematic } from "../components/RailSchematic";
+import { UploadCapabilities } from "../components/UploadCapabilities";
 import { api, ApiError, newIdempotencyKey } from "../lib/api";
 import { formatBytes, formatDuration } from "../lib/format";
 import type { JobOptions, Video } from "../lib/types";
@@ -52,10 +54,10 @@ export function UploadPage() {
     setError(null);
     try {
       const job = await api.createJob(video.video_id, options, idempotencyKey.current);
-      navigate(`/jobs/${job.job_id}`);
+      navigate(`/jobs/${job.job_id}`, { state: { skipTransition: true } });
     } catch (err) {
       if (err instanceof ApiError && err.code === "JOB_ALREADY_ACTIVE" && typeof err.details.job_id === "string") {
-        navigate(`/jobs/${err.details.job_id}`);
+        navigate(`/jobs/${err.details.job_id}`, { state: { skipTransition: true } });
         return;
       }
       setError(err instanceof Error ? err.message : "Could not start the analysis");
@@ -64,15 +66,23 @@ export function UploadPage() {
   };
 
   return (
-    <div className="stack">
-      <div className="page-header">
+    <div className="upload-page-container">
+      <div className="page-header upload-page-header">
         <h1>Analyse a freight train video</h1>
         <p>Upload a video to detect, count and order the wagons. Processing runs on the server.</p>
       </div>
 
       {error && <Alert kind="error" title="Something went wrong">{error}</Alert>}
 
-      {phase.kind === "idle" && <UploadDropzone onFile={onFile} />}
+      {phase.kind === "idle" && (
+        <>
+          <div className="upload-card">
+            <RailSchematic />
+            <UploadDropzone onFile={onFile} />
+          </div>
+          <UploadCapabilities />
+        </>
+      )}
 
       {phase.kind === "uploading" && (
         <Card title="Uploading">

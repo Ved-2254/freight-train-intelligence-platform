@@ -34,7 +34,10 @@ export function UploadDropzone({ onFile, disabled }: { onFile: (file: File) => v
       aria-disabled={disabled}
       onClick={() => !disabled && input.current?.click()}
       onKeyDown={(e) => {
-        if ((e.key === "Enter" || e.key === " ") && !disabled) input.current?.click();
+        if ((e.key === "Enter" || e.key === " ") && !disabled) {
+          e.preventDefault();
+          input.current?.click();
+        }
       }}
       onDragOver={(e) => {
         e.preventDefault();
@@ -43,8 +46,34 @@ export function UploadDropzone({ onFile, disabled }: { onFile: (file: File) => v
       onDragLeave={() => setDragging(false)}
       onDrop={onDrop}
     >
-      <strong>Drop a train video here, or click to choose a file</strong>
-      <p className="muted small">MP4, MOV, AVI or MKV, up to 2 GB</p>
+      <div className="dropzone-icon-wrap">
+        <svg
+          className="dropzone-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.75"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="17 8 12 3 7 8" />
+          <line x1="12" y1="3" x2="12" y2="15" />
+        </svg>
+      </div>
+
+      <strong className="dropzone-title">Drop a train video here, or click to choose a file</strong>
+      
+      <p className="dropzone-sub">
+        <span className="dropzone-tag">MP4, MOV, AVI or MKV</span>
+        <span className="dropzone-sep">·</span>
+        <span className="dropzone-tag">Up to 2 GB</span>
+      </p>
+
+      {/* Understated railway track-line motif at lower edge */}
+      <div className="dropzone-track-motif" aria-hidden="true" />
+
       <input
         ref={input}
         type="file"
