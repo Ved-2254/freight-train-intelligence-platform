@@ -77,19 +77,29 @@ export function JobsPage() {
               </thead>
               <tbody>
                 {data?.items.map((job) => (
-                  <tr key={job.job_id}>
-                    <td>{job.video_filename ?? <span className="mono muted">{job.video_id}</span>}</td>
+                  <tr key={job.job_id} className="job-row">
+                    <td className="video-name-cell">{job.video_filename ?? <span className="mono muted">{job.video_id}</span>}</td>
                     <td><StatusBadge status={job.status} /></td>
                     <td className="muted">
-                      {job.status === "running"
-                        ? `${stageLabel(job.stage)}${job.progress_percent != null ? `, ${Math.round(job.progress_percent)}%` : ""}`
-                        : job.status === "failed" || job.status === "cancelled"
-                          ? job.error?.message ?? "-"
-                          : job.status === "queued" ? "Waiting" : "Done"}
+                      {job.status === "running" ? (
+                        <span className="running-indicator">
+                          <span className="pulse-dot" aria-hidden="true" />
+                          <span>
+                            {stageLabel(job.stage)}
+                            {job.progress_percent != null ? `, ${Math.round(job.progress_percent)}%` : ""}
+                          </span>
+                        </span>
+                      ) : job.status === "failed" || job.status === "cancelled" ? (
+                        job.error?.message ?? "-"
+                      ) : job.status === "queued" ? (
+                        "Waiting"
+                      ) : (
+                        "Done"
+                      )}
                     </td>
                     <td className="num">{job.result_summary ? job.result_summary.total_wagons : "-"}</td>
                     <td className="muted">{formatDateTime(job.created_at)}</td>
-                    <td><Link to={`/jobs/${job.job_id}`}>Open</Link></td>
+                    <td><Link className="table-action-link" to={`/jobs/${job.job_id}`}>Open</Link></td>
                   </tr>
                 ))}
               </tbody>

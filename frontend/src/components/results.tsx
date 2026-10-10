@@ -26,7 +26,7 @@ export function ClassCountChart({ counts, excluded }: { counts: Record<string, n
     <div>
       {entries.map(([name, n]) => (
         <div className="bar-row" key={name}>
-          <span title={excluded.includes(name) ? "Not included in the wagon total" : undefined}>
+          <span className="bar-label" title={excluded.includes(name) ? "Not included in the wagon total" : undefined}>
             {name}{excluded.includes(name) ? " *" : ""}
           </span>
           <div className="bar-track">
@@ -50,22 +50,26 @@ export function SequenceStrip({
   const classes = useMemo(() => [...new Set(items.map((i) => i.class_name))], [items]);
   if (items.length === 0) return <p className="muted">No wagons in the sequence.</p>;
   return (
-    <div>
+    <div className="sequence-container">
       <div className="sequence" role="list" aria-label="Wagon sequence">
-        {items.map((item) => (
-          <button
-            key={item.wagon_uid}
-            role="listitem"
-            className={`wagon-chip${item.uncertain ? " uncertain" : ""}${selected === item.wagon_uid ? " selected" : ""}`}
-            style={{ ["--chip" as string]: classColor(item.class_name) }}
-            title={`#${item.position} ${item.wagon_uid}: ${item.class_name}${item.uncertain ? " (uncertain)" : ""}`}
-            onClick={() => onSelect(item.wagon_uid)}
-          >
-            <span className="pos">{item.position}</span>
-            {classAbbreviation(item.class_name)}
-          </button>
+        {items.map((item, idx) => (
+          <div key={item.wagon_uid} className="wagon-block-wrap">
+            <button
+              role="listitem"
+              className={`wagon-chip${item.uncertain ? " uncertain" : ""}${selected === item.wagon_uid ? " selected" : ""}`}
+              style={{ ["--chip" as string]: classColor(item.class_name) }}
+              title={`#${item.position} ${item.wagon_uid}: ${item.class_name}${item.uncertain ? " (uncertain)" : ""}`}
+              onClick={() => onSelect(item.wagon_uid)}
+            >
+              <span className="pos">#{item.position}</span>
+              <span className="class-code">{classAbbreviation(item.class_name)}</span>
+            </button>
+            {idx < items.length - 1 && <span className="coupler-link" aria-hidden="true" />}
+          </div>
         ))}
       </div>
+      {/* Subtle railway track baseline underneath the wagon sequence */}
+      <div className="sequence-track-baseline" aria-hidden="true" />
       <div className="legend">
         {classes.map((c) => (
           <span className="legend-item" key={c}>
@@ -73,7 +77,10 @@ export function SequenceStrip({
             {c}
           </span>
         ))}
-        <span className="legend-item">Dashed border: uncertain</span>
+        <span className="legend-item">
+          <span className="swatch swatch-uncertain" />
+          Dashed border: uncertain
+        </span>
       </div>
     </div>
   );
@@ -107,7 +114,11 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, { src: string }>(functi
       </p>
     );
   }
-  return <video ref={video} src={src} controls preload="metadata" onError={() => setFailed(true)} />;
+  return (
+    <div className="video-wrap">
+      <video ref={video} src={src} controls preload="metadata" onError={() => setFailed(true)} />
+    </div>
+  );
 });
 
 // ------------------------------------------------------------------ wagon table
@@ -183,15 +194,31 @@ export function ResultNotes({ result }: { result: PipelineResult }) {
   return (
     <div className="stack" style={{ gap: 20 }}>
       {warnings.length > 0 && (
-        <div>
-          <h3 style={{ marginBottom: 8 }}>Warnings</h3>
-          <ul className="plain">{warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>
+        <div className="notes-group">
+          <h3 className="notes-heading">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            Warnings
+          </h3>
+          <ul className="notes-list">
+            {warnings.map((w, i) => <li key={i}>{w}</li>)}
+          </ul>
         </div>
       )}
       {unresolved.length > 0 && (
-        <div>
-          <h3 style={{ marginBottom: 8 }}>Identities that need review</h3>
-          <ul className="plain">
+        <div className="notes-group">
+          <h3 className="notes-heading">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--info)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="16" x2="12" y2="12" />
+              <line x1="12" y1="8" x2="12.01" y2="8" />
+            </svg>
+            Identities that need review
+          </h3>
+          <ul className="notes-list">
             {unresolved.map((u, i) => (
               <li key={i}>
                 <span className="mono">{u.wagon_uids.join(", ")}</span>: {u.detail}
@@ -201,9 +228,11 @@ export function ResultNotes({ result }: { result: PipelineResult }) {
         </div>
       )}
       {notes.length > 0 && (
-        <div>
-          <h3 style={{ marginBottom: 8 }}>How the sequence is ordered</h3>
-          <ul className="plain muted">{notes.map((n, i) => <li key={i}>{n}</li>)}</ul>
+        <div className="notes-group">
+          <h3 className="notes-heading">How the sequence is ordered</h3>
+          <ul className="notes-list muted">
+            {notes.map((n, i) => <li key={i}>{n}</li>)}
+          </ul>
         </div>
       )}
     </div>
@@ -215,12 +244,40 @@ export function ResultNotes({ result }: { result: PipelineResult }) {
 export function Downloads({ links }: { links: JobLinks }) {
   if (!links.exports) return null;
   return (
-    <div className="row">
-      <a className="btn" href={apiUrl(links.exports.csv)}>Wagon table (CSV)</a>
-      <a className="btn" href={apiUrl(links.exports.json)}>Full results (JSON)</a>
-      <a className="btn" href={apiUrl(links.exports.tracks_csv)}>Frame observations (CSV)</a>
+    <div className="downloads-row">
+      <a className="btn" href={apiUrl(links.exports.csv)}>
+        <svg className="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
+        Wagon table (CSV)
+      </a>
+      <a className="btn" href={apiUrl(links.exports.json)}>
+        <svg className="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
+        Full results (JSON)
+      </a>
+      <a className="btn" href={apiUrl(links.exports.tracks_csv)}>
+        <svg className="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
+        Frame observations (CSV)
+      </a>
       {links.annotated_video && (
-        <a className="btn" href={`${apiUrl(links.annotated_video)}?download=true`}>Annotated video (MP4)</a>
+        <a className="btn" href={`${apiUrl(links.annotated_video)}?download=true`}>
+          <svg className="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          Annotated video (MP4)
+        </a>
       )}
     </div>
   );
